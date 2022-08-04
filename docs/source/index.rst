@@ -35,7 +35,7 @@ This library allows to:
 How to use ?
 ============
 
-This library is designed to use a TCP-RS485 adapter. The adapter is connected to the PC or server via Ethernet or Wi-fi or anything else, and is connected to the PLC via RS-485 on the TER plug.
+This library is designed to use a TCP-RS485 adapter. The adapter is connected to the PC or server which uses this lib via Ethernet or Wi-fi or anything else, and is connected to the PLC via RS-485 on the TER plug.
 
 This library was developed using the USR-TCP232-306 adapter. It was not tested with another kind of connection.
 
