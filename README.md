@@ -17,6 +17,13 @@ This library allows to:
 * Write multiple double words in ``%MD``
 * Read and write I/O channels (**couldn't test**)
 
+## Installation
+
+Clone the repository, then install using `setup.py`:
+```bash
+python3 setup.py install --user # to install for the user only
+```
+
 ## How to use ?
 
 This library is designed to use a TCP-RS485 adapter. The adapter is connected to the PC or server which uses this lib via Ethernet or Wi-fi or anything else, and is connected to the PLC via RS-485 on the TER plug.
