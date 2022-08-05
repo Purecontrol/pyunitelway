@@ -157,15 +157,8 @@ def _parse_read_bit_bytes(address, values_bits, has_forcing=False, forcing_bits=
     :rtype: | (bool, bool, dict[int: (bool, bool)]) if forcing
             | (bool, dict[int: bool]) if not
     """
-    # Selected bit
-    offset = address % 8
-
-    value_bit = (values_bits & (1 << offset)) != 0
-
-    if has_forcing:
-        forcing_bit = (forcing_bits & (1 << offset)) != 0
-
     # All bits
+    offset = address % 8
     result = {}
     start_address = address - offset
     for i in range(8):
@@ -180,9 +173,10 @@ def _parse_read_bit_bytes(address, values_bits, has_forcing=False, forcing_bits=
         result[i + start_address] = t
 
     if has_forcing:
-        return (value_bit, forcing_bit, result)
+        return (*result[address], result)   # result[address] is a tuple,
+                                            # we use * to get (result[address][0], result[address][1], ...)
 
-    return (value_bit, result)
+    return (*result[address], result)
 
 def parse_read_bit_result(address, bytes, has_forcing=False):
     """Parse ``READ_XXX_BIT`` response bytes.
