@@ -144,7 +144,7 @@ class UnitelwayClient:
         xway = self._unite_to_xway(unite_bytes)
         return self._xway_to_unitelway(xway)
 
-    def _unitelway_query(self, query, text="", debug=False):
+    def _unitelway_query(self, query, text="", debug=0):
         """Send a UNI-TELWAY request on the socket.
 
         .. WARNING::
@@ -161,7 +161,7 @@ class UnitelwayClient:
         :param bool debug: Debug mode
         """
         bytes = bytearray(query)
-        if debug:
+        if debug >= 1:
             print(f"------------------ {text} ----------------")
             print(f"[{time.time()}] Sending: {format_bytearray(bytes)}")
 
@@ -170,7 +170,7 @@ class UnitelwayClient:
         #if debug:
         #    print(f"[{time.time()}] Sent {n} bytes.")
 
-    def _unite_query(self, query, text="", debug=False):
+    def _unite_query(self, query, text="", debug=0):
         """Send a UNI-TE request on the socket.
 
         In debug mode, it prints: ::
@@ -189,7 +189,7 @@ class UnitelwayClient:
         unitelway = self._unite_to_unitelway(query)
         self._unitelway_query(unitelway, text, debug)
 
-    def _wait_unite_response(self, timeout=TIMEOUT_SEC):
+    def _wait_unite_response(self, timeout=TIMEOUT_SEC, debug=0):
         """Wait until a UNI-TE response is received.
 
         This function works with ``unite_query_until_response()``.
@@ -213,9 +213,9 @@ class UnitelwayClient:
         buf = []
         while True:
             r = self.socket.recv(3)
-            #print("recv =>", format_hex_list(r))
+            if debug >= 2:
+                print("recv =>", format_hex_list(r))
             buf.extend(b for b in r)
-            #print(format_bytearray(bytearray(buf)))
 
             # Delete <DLE> <ENQ> <nb>
             res = sublist_in_list(buf, [DLE, ENQ])
@@ -247,7 +247,7 @@ class UnitelwayClient:
 
         return buf
 
-    def _unite_query_until_response(self, query, timeout=TIMEOUT_SEC, text="", debug=False):
+    def _unite_query_until_response(self, query, timeout=TIMEOUT_SEC, text="", debug=0):
         """Send a UNI-TE request until it receives a valid response.
 
         This function works with ``wait_unite_response()``.
@@ -274,11 +274,11 @@ class UnitelwayClient:
         r = None
         while r is None:
             self._unite_query(query, text, debug)
-            r = self._wait_unite_response(timeout)
+            r = self._wait_unite_response(timeout, debug)
 
         return r
 
-    def run_unite(self, query, timeout=TIMEOUT_SEC, text="", debug=False):
+    def run_unite(self, query, timeout=TIMEOUT_SEC, text="", debug=0):
         """High-level function to send UNI-TE request and get the response.
 
         This function uses ``unite_query_until_response()`` and ``utils.unwrap_unite_response()``. So don't use them alone.
@@ -305,12 +305,12 @@ class UnitelwayClient:
         :raises BadUnitelwayChecksum: Received bad UNI-TELWAY checksum
         """
         r = self._unite_query_until_response(query, timeout, text, debug)
-        if debug:
+        if debug >= 1:
             print(f"[{time.time()}] Received:", format_hex_list(r))
         return unwrap_unite_response(r)
 
     #------ Mirror ------
-    def mirror(self, data, debug=False):
+    def mirror(self, data, debug=0):
         """Test connection with ``MIRROR`` request.
 
         This request sends a bunch of data and checks if the received message contains the same data.
@@ -363,7 +363,7 @@ class UnitelwayClient:
 
         return unite_query
 
-    def read_internal_bit(self, address, debug=False):
+    def read_internal_bit(self, address, debug=0):
         """Read bit in the internal memory (``%M``).
 
         The request reads bits by 8. The first returned bit is at the nearest address which is a multiple of 8.
@@ -404,7 +404,7 @@ class UnitelwayClient:
 
         return parse_read_bit_result(address, resp[1:], has_forcing=True)
 
-    def read_system_bit(self, address, debug=False):
+    def read_system_bit(self, address, debug=0):
         """Read bit in the system memory (``%S``).
 
         The request reads bits by 8. The first returned bit is at the nearest address which is a multiple of 8.
@@ -443,7 +443,7 @@ class UnitelwayClient:
 
         return parse_read_bit_result(address, resp[1:], has_forcing=False)
 
-    def read_internal_word(self, address, debug=False):
+    def read_internal_word(self, address, debug=0):
         """Read a word (2 bytes signed integer) in the internal memory (``%MW``).
 
         :param int address: Word address
@@ -461,7 +461,7 @@ class UnitelwayClient:
 
         return parse_read_word_result(resp[1:])
 
-    def read_system_word(self, address, debug=False):
+    def read_system_word(self, address, debug=0):
         """Read a word (2 bytes signed integer) in the system memory (``%SW``).
 
         :param int address: Word address
@@ -479,7 +479,7 @@ class UnitelwayClient:
 
         return parse_read_word_result(resp[1:])
 
-    def read_constant_word(self, address, debug=False):
+    def read_constant_word(self, address, debug=0):
         """Read a word (2 bytes signed integer) in the constant memory (``%KW``).
 
         :param int address: Word address
@@ -497,7 +497,7 @@ class UnitelwayClient:
 
         return parse_read_word_result(resp[1:])
 
-    def read_internal_dword(self, address, debug=False):
+    def read_internal_dword(self, address, debug=0):
         """Read a double word (4 bytes signed integer) in the internal memory (``%MW``).
 
         :param int address: Word address
@@ -515,7 +515,7 @@ class UnitelwayClient:
 
         return parse_read_word_result(resp[1:])
 
-    def read_constant_dword(self, address, debug=False):
+    def read_constant_dword(self, address, debug=0):
         """Read a double word (4 bytes signed integer) in the constant memory (``%KW``).
 
         :param int address: Word address
@@ -534,7 +534,7 @@ class UnitelwayClient:
         return parse_read_word_result(resp[1:])
 
     #------ Reading objects queries ------
-    def _read_objects(self, segment, obj_type, start_address, number, debug=False):
+    def _read_objects(self, segment, obj_type, start_address, number, debug=0):
         """Send ``READ_OBJECTS`` request.
 
         This function is a low-level function: it returns directly the UNI-TE response. It's used in ``read_xxx_bits``, ``read_xxx_words`` and
@@ -562,7 +562,7 @@ class UnitelwayClient:
 
         return resp
 
-    def read_internal_bits(self, start_address, number, debug=False):
+    def read_internal_bits(self, start_address, number, debug=0):
         """Read multiple bits in the internal memory (``%M``).
 
         .. WARNING::
@@ -596,7 +596,7 @@ class UnitelwayClient:
         r = self._read_objects(0x64, 0x05, start_address, number, debug)
         return parse_read_bits_result(0x05, start_address, number, r[1:], has_forcing=True)
 
-    def read_system_bits(self, start_address, number, debug=False):
+    def read_system_bits(self, start_address, number, debug=0):
         """Read multiple bits in the system memory (``%S``).
 
         .. WARNING::
@@ -630,7 +630,7 @@ class UnitelwayClient:
         r = self._read_objects(0x64, 0x06, start_address, number, debug)
         return parse_read_bits_result(0x06, start_address, number, r[1:], has_forcing=False)
 
-    def read_internal_words(self, start_address, number, debug=False):
+    def read_internal_words(self, start_address, number, debug=0):
         """Read multiple internal words (2 bytes signed integers) (``%MW``).
 
         :param int start_address: First address to read
@@ -643,7 +643,7 @@ class UnitelwayClient:
         r = self._read_objects(0x68, 0x07, start_address, number, debug)
         return parse_read_words_result(0x07, 2, r[1:])
 
-    def read_system_words(self, start_address, number, debug=False):
+    def read_system_words(self, start_address, number, debug=0):
         """Read multiple system words (2 bytes signed integers) (``%SW``).
 
         :param int start_address: First address to read
@@ -656,7 +656,7 @@ class UnitelwayClient:
         r = self._read_objects(0x6A, 0x07, start_address, number, debug)
         return parse_read_words_result(0x07, 2, r[1:])
 
-    def read_constant_words(self, start_address, number, debug=False):
+    def read_constant_words(self, start_address, number, debug=0):
         """Read multiple constant words (2 bytes signed integers) (``%KW``).
 
         :param int start_address: First address to read
@@ -669,7 +669,7 @@ class UnitelwayClient:
         r = self._read_objects(0x69, 0x07, start_address, number, debug)
         return parse_read_words_result(0x07, 2, r[1:])
 
-    def read_internal_dwords(self, start_address, number, debug=False):
+    def read_internal_dwords(self, start_address, number, debug=0):
         """Read multiple internal double words (4 bytes signed integers) (``%MD``).
 
         .. WARNING::
@@ -687,7 +687,7 @@ class UnitelwayClient:
         r = self._read_objects(0x68, 0x08, start_address, number, debug)
         return parse_read_words_result(0x08, 4, r[1:])
 
-    def read_constant_dwords(self, start_address, number, debug=False):
+    def read_constant_dwords(self, start_address, number, debug=0):
         """Read multiple constant double words (4 bytes signed integers) (``%KD``).
 
         .. WARNING::
@@ -706,7 +706,7 @@ class UnitelwayClient:
         return parse_read_words_result(0x08, 4, r[1:])
 
     #---------- Reading IO queries ----------
-    #def read_digital_module_image(self, extension, module_xway_address, debug=False):
+    #def read_digital_module_image(self, extension, module_xway_address, debug=0):
         #unite_query = [0x49, self.category_code, extension, *module_xway_address, 1]
         #resp = self.run_unite(unite_query, text=f"READ_DIGITAL_MODULE_IMAGE at Address={module_xway_address}", debug=debug)
 
@@ -715,7 +715,7 @@ class UnitelwayClient:
 
         #return parse_read_digital_image_module_response(resp)
 
-    def read_io_channel(self, xway_channel_address, obj_type, number, start_address, debug=False):
+    def read_io_channel(self, xway_channel_address, obj_type, number, start_address, debug=0):
         """**[NOT TESTED]** Read I/O channel (``%I``, ``%Q``, ``%IW``, ``%QW``).
 
         The ``READ_IO_CHANNEL`` reads input and output bits and words at the same time. The ``number`` and ``start_address``
@@ -761,7 +761,7 @@ class UnitelwayClient:
         return parse_read_io_channel_result(start_address, r[1:])
 
     #---------- Writing ----------
-    def write_internal_bit(self, address, value, debug=False):
+    def write_internal_bit(self, address, value, debug=0):
         """Write a bit in the internal memory (``%M``).
 
         The value can be ``0``, ``1``, ``True`` or ``False``.
@@ -785,7 +785,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
         
-    def write_system_bit(self, address, value, debug=False):
+    def write_system_bit(self, address, value, debug=0):
         """Write a bit in the system memory (``%S``).
 
         The value can be ``0``, ``1``, ``True`` or ``False``.
@@ -809,7 +809,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
         
-    def write_internal_word(self, address, value, debug=False):
+    def write_internal_word(self, address, value, debug=0):
         """Write a word (2 bytes signed integer) in the internal memory (``%MW``).
 
         :param int address: Address to write
@@ -831,7 +831,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
         
-    def write_system_word(self, address, value, debug=False):
+    def write_system_word(self, address, value, debug=0):
         """Write a word (2 bytes signed integer) in the system memory (``%SW``).
 
         :param int address: Address to write
@@ -853,7 +853,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
         
-    def write_internal_dword(self, address, value, debug=False):
+    def write_internal_dword(self, address, value, debug=0):
         """Write a double word (4 bytes signed integer) in the internal memory (``%MD``).
 
         :param int address: Address to write
@@ -875,7 +875,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
 
-    def _write_objects(self, segment, obj_type, start_address, number, data, debug=False):
+    def _write_objects(self, segment, obj_type, start_address, number, data, debug=0):
         """Send ``WRITE_OBJECTS`` request.
 
         This function is a low-level function. It's used by ``write_xxx_bits``, ``write_xxx_words``, ``write_xxx_dwords``.
@@ -906,7 +906,7 @@ class UnitelwayClient:
 
         return parse_write_result(resp)
 
-    def _write_words(self, segment, start_address, data, debug=False):
+    def _write_words(self, segment, start_address, data, debug=0):
         """Write multiple words (2 bytes signed integers).
 
         This function is a low-level function. It's used by ``write_xxx_words``.
@@ -929,7 +929,7 @@ class UnitelwayClient:
         ok = self._write_objects(segment, 0x07, start_address, len(data), data_bytes, debug)
         return ok
 
-    def write_internal_words(self, start_address, data, debug=False):
+    def write_internal_words(self, start_address, data, debug=0):
         """Write multiple words (2 bytes signed integers) in the internal memory (``%MW``).
 
         :param int start_address: First address to write at
@@ -942,7 +942,7 @@ class UnitelwayClient:
         ok = self._write_words(0x68, start_address, data, debug)
         return ok
 
-    def write_system_words(self, start_address, data, debug=False):
+    def write_system_words(self, start_address, data, debug=0):
         """Write multiple words (2 bytes signed integers) in the system memory (``%SW``).
 
         :param int start_address: First address to write at
@@ -955,7 +955,7 @@ class UnitelwayClient:
         ok = self._write_words(0x6A, start_address, data, debug)
         return ok
 
-    def _write_dwords(self, segment, start_address, data, debug=False):
+    def _write_dwords(self, segment, start_address, data, debug=0):
         """Write multiple double words (4 bytes signed integers).
 
         This function is a low-level function. It's used by ``write_xxx_dwords``.
@@ -978,7 +978,7 @@ class UnitelwayClient:
         ok = self._write_objects(segment, 0x08, start_address, len(data), data_bytes, debug)
         return ok
 
-    def write_internal_dwords(self, start_address, data, debug=False):
+    def write_internal_dwords(self, start_address, data, debug=0):
         """Write multiple double words (4 bytes signed integers) in the internal memory (``%MD``).
 
         .. WARNING::
@@ -997,7 +997,7 @@ class UnitelwayClient:
         return ok
 
     #---------- Writing IO queries ----------
-    def write_io_channel(self, xway_channel_address, obj_type, start_address, number, bits_values, words_values, debug=False):
+    def write_io_channel(self, xway_channel_address, obj_type, start_address, number, bits_values, words_values, debug=0):
         """**[NOT TESTED]** Write I/O channel (``%I``, ``%Q``, ``%IW``, ``%QW``).
 
         | The ``bits_values`` argument are the request bytes.
