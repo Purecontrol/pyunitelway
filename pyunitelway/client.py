@@ -151,14 +151,9 @@ class UnitelwayClient:
 
             The UNI-TELWAY request has to be already built
 
-        In debug mode, it prints: ::
-
-            ------------------ <text> ------------------
-            [<timestamp>] Sending: <query>
-
         :param list[int] query: UNI-TELWAY request bytes
         :param str text: Text to print in debug mode
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
         """
         bytes = bytearray(query)
         if debug >= 1:
@@ -173,18 +168,13 @@ class UnitelwayClient:
     def _unite_query(self, query, text="", debug=0):
         """Send a UNI-TE request on the socket.
 
-        In debug mode, it prints: ::
-
-            ------------------ <text> ------------------
-            [<timestamp>] Sending: <query>
-
         .. NOTE::
 
             All the UNI-TELWAY request is printed
 
         :param list[int] query: UNI-TE request bytes
         :param str text: Text to print in debug mode
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
         """
         unitelway = self._unite_to_unitelway(query)
         self._unitelway_query(unitelway, text, debug)
@@ -254,11 +244,6 @@ class UnitelwayClient:
 
         If ``wait_unite_response`` returns ``None`` (reached timeout), it sends the request again.
 
-        In debug mode, it prints: ::
-
-            ------------------ <text> ------------------
-            [<timestamp>] Sending: <query>
-
         .. NOTE::
 
             All the UNI-TELWAY request is printed
@@ -266,7 +251,7 @@ class UnitelwayClient:
         :param list[int] query: UNI-TE request
         :param float timeout: Timeout before sending again the request
         :param str text: Text to print in debug mode
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: UNI-TELWAY response bytes
         :rtype: list[int]
@@ -284,12 +269,6 @@ class UnitelwayClient:
         This function uses ``unite_query_until_response()`` and ``utils.unwrap_unite_response()``. So don't use them alone.
         See ``utils.py`` for more details about ``unwrap_unite_response``.
 
-        In debug mode, it prints: ::
-
-            ------------------ <text> ------------------
-            [<timestamp>] Sending: <query>
-            [<timestamp>] Received: <response>
-
         .. NOTE::
 
             All the UNI-TELWAY request and response are printed
@@ -297,7 +276,7 @@ class UnitelwayClient:
         :param list[int] query: UNI-TE request
         :param float timeout: Timeout before sending again the request
         :param str text: Text to print in debug mode
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: UNI-TE response bytes
         :rtype: list[int]
@@ -317,7 +296,7 @@ class UnitelwayClient:
         If data are the same: return ``True``, else ``False``.
 
         :param list[int] data: Data to send in the request
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the received data is the same as the sent data
         :rtype: bool
@@ -390,7 +369,7 @@ class UnitelwayClient:
             )
 
         :param int address: Bit address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Tuple with value and forcing for the 8 bits
         :rtype: (bool, bool, dict[int: (bool, bool)])
@@ -429,7 +408,7 @@ class UnitelwayClient:
             )
 
         :param int address: Bit address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Tuple with value and forcing for the 8 bits
         :rtype: (bool, dict[int: bool])
@@ -447,7 +426,7 @@ class UnitelwayClient:
         """Read a word (2 bytes signed integer) in the internal memory (``%MW``).
 
         :param int address: Word address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Signed word value
         :rtype: int
@@ -465,7 +444,7 @@ class UnitelwayClient:
         """Read a word (2 bytes signed integer) in the system memory (``%SW``).
 
         :param int address: Word address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Signed word value
         :rtype: int
@@ -483,7 +462,7 @@ class UnitelwayClient:
         """Read a word (2 bytes signed integer) in the constant memory (``%KW``).
 
         :param int address: Word address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Signed word value
         :rtype: int
@@ -501,7 +480,7 @@ class UnitelwayClient:
         """Read a double word (4 bytes signed integer) in the internal memory (``%MW``).
 
         :param int address: Word address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Signed word value
         :rtype: int
@@ -519,7 +498,7 @@ class UnitelwayClient:
         """Read a double word (4 bytes signed integer) in the constant memory (``%KW``).
 
         :param int address: Word address
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Signed word value
         :rtype: int
@@ -544,7 +523,7 @@ class UnitelwayClient:
         :param int obj_type: Object type value
         :param int start_address: First address to read
         :param int number: Number of ojbects to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: UNI-TE ``READ_OBJECTS`` response
         """
@@ -585,7 +564,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of bits to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Dictionary with value and forcing for each bit
         :rtype: dict[int: (bool, bool)]
@@ -619,7 +598,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of bits to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Dictionary with value for each bit
         :rtype: dict[int: bool]
@@ -635,7 +614,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of words to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: List of signed word values
         :rtype: list[int]
@@ -648,7 +627,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of words to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: List of signed word values
         :rtype: list[int]
@@ -661,7 +640,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of words to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: List of signed word values
         :rtype: list[int]
@@ -679,7 +658,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of words to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: List of signed words values
         :rtype: list[int]
@@ -697,7 +676,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to read
         :param int number: Number of words to read
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: List of signed words values
         :rtype: list[int]
@@ -747,7 +726,7 @@ class UnitelwayClient:
         :param int obj_type: I/O object type
         :param int number: Number of objects to read.
         :param int start_address: First address to read.
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: Dictionary with all the values
         :rtype: dict[str: dict]
@@ -768,7 +747,7 @@ class UnitelwayClient:
 
         :param int address: Address to write
         :param bool value: Value to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -792,7 +771,7 @@ class UnitelwayClient:
 
         :param int address: Address to write
         :param bool value: Value to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -814,7 +793,7 @@ class UnitelwayClient:
 
         :param int address: Address to write
         :param int value: Value to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -836,7 +815,7 @@ class UnitelwayClient:
 
         :param int address: Address to write
         :param int value: Value to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -858,7 +837,7 @@ class UnitelwayClient:
 
         :param int address: Address to write
         :param int value: Value to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -886,7 +865,7 @@ class UnitelwayClient:
         :param int obj_type: Object type value
         :param int start_address: First address to write at
         :param list[int] data: Bytes to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -916,7 +895,7 @@ class UnitelwayClient:
         :param int segment: Segment where to write
         :param int start_address: First address to write at
         :param list[int] data: Signed words values to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -934,7 +913,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to write at
         :param list[int] data: Signed words values to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -947,7 +926,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to write at
         :param list[int] data: Signed words values to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -965,7 +944,7 @@ class UnitelwayClient:
         :param int segment: Segment where to write
         :param int start_address: First address to write at
         :param list[int] data: Signed words values to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -988,7 +967,7 @@ class UnitelwayClient:
 
         :param int start_address: First address to write at
         :param list[int] data: Signed words values to write
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if the writing succeeded
         :rtype: bool
@@ -1009,7 +988,7 @@ class UnitelwayClient:
         :param int number: Number of objects to write
         :param int bits_values: Values of bits
         :param list[int] words_values: Values of words
-        :param bool debug: Debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
 
         :returns: ``True`` if writing succeeded (see ``conversion.parse_write_io_channel_result``)
         :rtype: bool

@@ -28,6 +28,7 @@ This library allows to:
    :caption: Contents:
 
    ./configuration.rst
+   ./debug_levels.rst
    ./client.rst
    ./utils.rst
    ./conversion.rst
