@@ -1,12 +1,10 @@
 from setuptools import setup, find_packages
  
-import pyunitelway
- 
 print(find_packages())
  
 setup(
     name='pyunitelway',
-    version=pyunitelway.__version__,
+    version="0.2",
     packages=find_packages(),
     author="Yoann DEWILDE",
  
