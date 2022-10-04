@@ -237,7 +237,7 @@ class UnitelwayClient:
 
         return buf
 
-    def _unite_query_until_response(self, query, timeout=TIMEOUT_SEC, text="", debug=0):
+    def _unite_query_until_response(self,address, query, timeout=TIMEOUT_SEC, text="", debug=0):
         """Send a UNI-TE request until it receives a valid response.
 
         This function works with ``wait_unite_response()``.
@@ -258,12 +258,13 @@ class UnitelwayClient:
         """
         r = None
         while r is None:
-            self._unite_query(query, text, debug)
-            r = self._wait_unite_response(timeout, debug)
+            if self.is_my_turn_to_talk(address):
+                self._unite_query(query, text, debug)
+                r = self._wait_unite_response(timeout, debug)
 
         return r
 
-    def run_unite(self, query, timeout=TIMEOUT_SEC, text="", debug=0):
+    def run_unite(self,address,query, timeout=TIMEOUT_SEC,text="", debug=0):
         """High-level function to send UNI-TE request and get the response.
 
         This function uses ``unite_query_until_response()`` and ``utils.unwrap_unite_response()``. So don't use them alone.
@@ -273,6 +274,7 @@ class UnitelwayClient:
 
             All the UNI-TELWAY request and response are printed
 
+        :param address[int] : slave address
         :param list[int] query: UNI-TE request
         :param float timeout: Timeout before sending again the request
         :param str text: Text to print in debug mode
@@ -283,10 +285,46 @@ class UnitelwayClient:
 
         :raises BadUnitelwayChecksum: Received bad UNI-TELWAY checksum
         """
-        r = self._unite_query_until_response(query, timeout, text, debug)
+        r = self._unite_query_until_response(address,query, timeout, text, debug)
         if debug >= 1:
             print(f"[{time.time()}] Received:", format_hex_list(r))
         return unwrap_unite_response(r)
+    
+    def is_my_turn_to_talk(self,address,debug=0):
+        """Allows slave to give permission to the master to communicate
+
+        .. NOTE::
+
+        :param address[int] : slave address
+        :param list[int] query: UNI-TE request
+        :param float timeout: Timeout before sending again the request
+        :param str text: Text to print in debug mode
+        :param bool debug: :doc:`Debug mode </debug_levels>`
+
+        :returns: Boolean. Slave authorized or not to communicate to master
+
+        :raises BadUnitelwayChecksum: Received bad UNI-TELWAY checksum
+        """
+        buf = []
+        is_in= False
+
+        while True:
+            r = self.socket.recv(3)
+            if debug >= 1:
+                print("recv =>", format_hex_list(r))
+
+            buf.extend(b for b in r)
+
+            if debug >= 1:
+                print("Buffer from master")
+                print("Frame to get :"+ [DLE, ENQ,address])
+
+            res = sublist_in_list(buf, [DLE, ENQ,address])
+            is_in=res[0]
+
+            if is_in:
+                break
+        return is_in
 
     #------ Mirror ------
     def mirror(self, data, debug=0):
@@ -307,12 +345,17 @@ class UnitelwayClient:
         :raises UnexpectedUniteResponse: The response code is not ``MIRROR``'s response code 
         """
         unite_query = [0xFA, self.category_code, *data]
-        resp = self.run_unite(unite_query, text="MIRROR", debug=debug)
+        slave_address= self._unitelway_start[2]
+        
+        resp = self.run_unite(slave_address,unite_query, text="MIRROR", debug=debug)
+       
 
         if not is_valid_response_code(MIRROR, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(MIRROR), resp[0])
 
         return parse_mirror_result(resp[1:], data)
+
+        
 
     #------ Reading queries ------
     def _build_addressing_query(self, query_code, address, address_bytes_count=2, address_byte_order="little"):
@@ -375,8 +418,10 @@ class UnitelwayClient:
         :rtype: (bool, bool, dict[int: (bool, bool)])
         """
         unite_query = self._build_addressing_query(READ_INTERNAL_BIT, address)
+        
+        slave_address= self._unitelway_start[2]
 
-        resp = self.run_unite(unite_query, text=f"READ_INTERNAL_BIT at %M{address}", debug=debug)
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_INTERNAL_BIT at %M{address}", debug=debug)
 
         if not is_valid_response_code(READ_INTERNAL_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_BIT), resp[0])
@@ -415,7 +460,9 @@ class UnitelwayClient:
         """
         unite_query = self._build_addressing_query(READ_SYSTEM_BIT, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_SYSTEM_BIT at %S{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_SYSTEM_BIT at %S{address}", debug=debug)
 
         if not is_valid_response_code(READ_SYSTEM_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_SYSTEM_BIT), resp[0])
@@ -431,11 +478,15 @@ class UnitelwayClient:
         :returns: Signed word value
         :rtype: int
         """
+
         unite_query = self._build_addressing_query(READ_INTERNAL_WORD, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_INTERNAL_WORD at %MW{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address,unite_query,text=f"READ_INTERNAL_WORD at %MW{address}", debug=debug)
 
         if not is_valid_response_code(READ_INTERNAL_WORD, resp[0]):
+            print(resp[0]) #change
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_WORD), resp[0])
 
         return parse_read_word_result(resp[1:])
@@ -451,7 +502,9 @@ class UnitelwayClient:
         """
         unite_query = self._build_addressing_query(READ_SYSTEM_WORD, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_SYSTEM_WORD at %SW{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address,unite_query, text=f"READ_SYSTEM_WORD at %SW{address}", debug=debug)
 
         if not is_valid_response_code(READ_SYSTEM_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_SYSTEM_WORD), resp[0])
@@ -469,7 +522,9 @@ class UnitelwayClient:
         """
         unite_query = self._build_addressing_query(READ_CONSTANT_WORD, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_CONSTANT_WORD at %KW{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_CONSTANT_WORD at %KW{address}", debug=debug)
 
         if not is_valid_response_code(READ_CONSTANT_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_CONSTANT_WORD), resp[0])
@@ -487,7 +542,9 @@ class UnitelwayClient:
         """
         unite_query = self._build_addressing_query(READ_INTERNAL_DWORD, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_INTERNAL_DWORD at %MD{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_INTERNAL_DWORD at %MD{address}", debug=debug)
 
         if not is_valid_response_code(READ_INTERNAL_DWORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_DWORD), resp[0])
@@ -505,7 +562,9 @@ class UnitelwayClient:
         """
         unite_query = self._build_addressing_query(READ_CONSTANT_DWORD, address)
 
-        resp = self.run_unite(unite_query, text=f"READ_CONSTANT_DWORD at %KD{address}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_CONSTANT_DWORD at %KD{address}", debug=debug)
 
         if not is_valid_response_code(READ_CONSTANT_DWORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_CONSTANT_DWORD), resp[0])
@@ -534,7 +593,9 @@ class UnitelwayClient:
         unite_query.extend(address_bytes)
         unite_query.extend(number_bytes)
 
-        resp = self.run_unite(unite_query, text=f"READ_OBJECTS Seg={segment} Type={obj_type} @{start_address} N={number}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address,unite_query, text=f"READ_OBJECTS Seg={segment} Type={obj_type} @{start_address} N={number}", debug=debug)
 
         if not is_valid_response_code(READ_OBJECTS, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_OBJECTS), resp[0])
@@ -739,6 +800,8 @@ class UnitelwayClient:
 
         return parse_read_io_channel_result(start_address, r[1:])
 
+
+
     #---------- Writing ----------
     def write_internal_bit(self, address, value, debug=0):
         """Write a bit in the internal memory (``%M``).
@@ -757,7 +820,9 @@ class UnitelwayClient:
         value_int = int(value)
         unite_query.append(value_int)
         
-        resp = self.run_unite(unite_query, text=f"WRITE_INTERNAL_BIT %M{address} = {value_int}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_INTERNAL_BIT %M{address} = {value_int}", debug=debug)
 
         if not is_valid_response_code(WRITE_INTERNAL_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_BIT), resp[0])
@@ -781,7 +846,9 @@ class UnitelwayClient:
         value_int = int(value)
         unite_query.append(value_int)
         
-        resp = self.run_unite(unite_query, text=f"WRITE_SYSTEM_BIT %S{address} = {value_int}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_SYSTEM_BIT %S{address} = {value_int}", debug=debug)
 
         if not is_valid_response_code(WRITE_SYSTEM_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_SYSTEM_BIT), resp[0])
@@ -803,7 +870,9 @@ class UnitelwayClient:
         value_bytes = value.to_bytes(2, byteorder="little", signed=True)
         unite_query.extend(value_bytes)
         
-        resp = self.run_unite(unite_query, text=f"WRITE_INTERNAL_WORD %MW{address} = {value}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_INTERNAL_WORD %MW{address} = {value}", debug=debug)
 
         if not is_valid_response_code(WRITE_INTERNAL_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_WORD), resp[0])
@@ -825,7 +894,9 @@ class UnitelwayClient:
         value_bytes = value.to_bytes(2, byteorder="little", signed=True)
         unite_query.extend(value_bytes)
         
-        resp = self.run_unite(unite_query, text=f"WRITE_SYSTEM_WORD %SW{address} = {value}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_SYSTEM_WORD %SW{address} = {value}", debug=debug)
 
         if not is_valid_response_code(WRITE_SYSTEM_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_SYSTEM_WORD), resp[0])
@@ -847,7 +918,9 @@ class UnitelwayClient:
         value_bytes = value.to_bytes(4, byteorder="little", signed=True)
         unite_query.extend(value_bytes)
         
-        resp = self.run_unite(unite_query, text=f"WRITE_INTERNAL_DWORD %MD{address} = {value}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_INTERNAL_DWORD %MD{address} = {value}", debug=debug)
 
         if not is_valid_response_code(WRITE_INTERNAL_DWORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_DWORD), resp[0])
@@ -878,7 +951,9 @@ class UnitelwayClient:
         unite_query.extend(number_bytes)
         unite_query.extend(data)
 
-        resp = self.run_unite(unite_query, text=f"WRITE_OBJECTS Seg={segment} Type={obj_type} @{start_address} Values={format_hex_list(data)}", debug=debug)
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"WRITE_OBJECTS Seg={segment} Type={obj_type} @{start_address} Values={format_hex_list(data)}", debug=debug)
 
         if not is_valid_response_code(WRITE_OBJECTS, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_OBJECTS), resp[0])
