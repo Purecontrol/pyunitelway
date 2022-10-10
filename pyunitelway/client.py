@@ -25,8 +25,9 @@ class UnitelwayClient:
     :param int xway_gate: X-WAY gate value
     :param int xway_ext1: X-WAY ext1 value (5-6 levels addressing)
     :param int xway_ext2: X-WAY ext2 value (5-6 levels addressing)
+    :param bool VPN_Mode : Switch On if using VPN
     """
-    def __init__(self, slave_address, category_code, xway_network, xway_station, xway_gate, xway_ext1, xway_ext2):
+    def __init__(self, slave_address, category_code, xway_network, xway_station, xway_gate, xway_ext1, xway_ext2,VPN_Mode):
         """The constructor.
         
         ``ext1`` and ``ext2`` are used for 5 and 6-levels addressing. See: https://download.schneider-electric.com/files?p_enDocType=User+guide&p_File_Name=35000789_K06_000_00.pdf&p_Doc_Ref=35000789K01000, p.55 for the format.
@@ -47,6 +48,7 @@ class UnitelwayClient:
 
         self.category_code = category_code
         self.link_address = slave_address
+        self.VPN_Mode=VPN_Mode
 
     def connect_socket(self, ip, port, connection_query=None):
         """Connect to the USR-TCP232-306 adapter.
@@ -74,6 +76,18 @@ class UnitelwayClient:
         :param list[int] connection_query: *Connection query*
         """
         self._unitelway_query(connection_query, "Connecting to USR-TCP232-306 adapter")
+
+    def disconnect_socket(self,debug=0):
+
+        try:
+            self.socket.close()
+            if debug>=2:
+                print("Socket is closed")
+              
+        except:
+            print("Socket is not closed")
+
+    
 
     def _unite_to_xway(self, unite_bytes):
         """Wrap UNI-TE request into an X-WAY request.
@@ -159,9 +173,10 @@ class UnitelwayClient:
         if debug >= 1:
             print(f"------------------ {text} ----------------")
             print(f"[{time.time()}] Sending: {format_bytearray(bytes)}")
-
+        
+        
         n = self.socket.send(bytes)
-
+        
         #if debug:
         #    print(f"[{time.time()}] Sent {n} bytes.")
 
@@ -227,14 +242,15 @@ class UnitelwayClient:
                 received_link_addr = buf[dle_stx_idx + 2]
                 if received_link_addr == self.link_address:
                     break
-
-            end = time.time()
-            if end - start >= timeout:
-                return None
+            
+            if self.VPN_Mode == False:
+                end = time.time()
+                if end - start >= timeout:
+                    return None
 
         buf = buf[dle_stx_idx:]
         buf.extend(b for b in self.socket.recv(256))
-
+        
         return buf
 
     def _unite_query_until_response(self,address, query, timeout=TIMEOUT_SEC, text="", debug=0):
@@ -258,10 +274,15 @@ class UnitelwayClient:
         """
         r = None
         while r is None:
-            if self.is_my_turn_to_talk(address):
+            #Used with VPN
+            if self.VPN_Mode:
                 self._unite_query(query, text, debug)
                 r = self._wait_unite_response(timeout, debug)
-
+            #Used in local / must wait polling from automate
+            else:
+                if self.is_my_turn_to_talk(address):
+                    self._unite_query(query, text, debug)
+                    r = self._wait_unite_response(timeout, debug)
         return r
 
     def run_unite(self,address,query, timeout=TIMEOUT_SEC,text="", debug=0):
@@ -288,6 +309,9 @@ class UnitelwayClient:
         r = self._unite_query_until_response(address,query, timeout, text, debug)
         if debug >= 1:
             print(f"[{time.time()}] Received:", format_hex_list(r))
+        
+        self.disconnect_socket(debug=debug)
+        
         return unwrap_unite_response(r)
     
     def is_my_turn_to_talk(self,address,debug=0):
@@ -315,7 +339,7 @@ class UnitelwayClient:
 
             buf.extend(b for b in r)
 
-            if debug >= 1:
+            if debug >=2:
                 print("Buffer from master")
                 print("Frame to get :"+ [DLE, ENQ,address])
 
@@ -428,6 +452,8 @@ class UnitelwayClient:
 
         return parse_read_bit_result(address, resp[1:], has_forcing=True)
 
+        
+
     def read_system_bit(self, address, debug=0):
         """Read bit in the system memory (``%S``).
 
@@ -467,6 +493,9 @@ class UnitelwayClient:
         if not is_valid_response_code(READ_SYSTEM_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_SYSTEM_BIT), resp[0])
 
+        if debug >=2:
+            print(address)
+
         return parse_read_bit_result(address, resp[1:], has_forcing=False)
 
     def read_internal_word(self, address, debug=0):
@@ -486,9 +515,8 @@ class UnitelwayClient:
         resp = self.run_unite(slave_address,unite_query,text=f"READ_INTERNAL_WORD at %MW{address}", debug=debug)
 
         if not is_valid_response_code(READ_INTERNAL_WORD, resp[0]):
-            print(resp[0]) #change
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_WORD), resp[0])
-
+        
         return parse_read_word_result(resp[1:])
 
     def read_system_word(self, address, debug=0):
@@ -826,6 +854,9 @@ class UnitelwayClient:
 
         if not is_valid_response_code(WRITE_INTERNAL_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_BIT), resp[0])
+        else:
+            if debug >=2:
+                print("Request taken into account")
 
         return parse_write_result(resp)
         
@@ -852,6 +883,9 @@ class UnitelwayClient:
 
         if not is_valid_response_code(WRITE_SYSTEM_BIT, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_SYSTEM_BIT), resp[0])
+        else:
+            if debug >=2:
+                print("Request taken into account")
 
         return parse_write_result(resp)
         
@@ -876,7 +910,9 @@ class UnitelwayClient:
 
         if not is_valid_response_code(WRITE_INTERNAL_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_WORD), resp[0])
-
+        else:
+            if debug >=2:
+                print("Request taken into account")
         return parse_write_result(resp)
         
     def write_system_word(self, address, value, debug=0):
@@ -900,6 +936,9 @@ class UnitelwayClient:
 
         if not is_valid_response_code(WRITE_SYSTEM_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_SYSTEM_WORD), resp[0])
+        else:
+            if debug >=2:
+                print("Request taken into account")
 
         return parse_write_result(resp)
         
@@ -924,6 +963,9 @@ class UnitelwayClient:
 
         if not is_valid_response_code(WRITE_INTERNAL_DWORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(WRITE_INTERNAL_DWORD), resp[0])
+        else:
+            if debug >=2:
+                print("Request taken into account")
 
         return parse_write_result(resp)
 

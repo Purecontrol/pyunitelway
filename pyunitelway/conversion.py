@@ -175,8 +175,7 @@ def _parse_read_bit_bytes(address, values_bits, has_forcing=False, forcing_bits=
     if has_forcing:
         return (*result[address], result)   # result[address] is a tuple,
                                             # we use * to get (result[address][0], result[address][1], ...)
-
-    return (*result[address], result)
+    return (result[address], result)
 
 def parse_read_bit_result(address, bytes, has_forcing=False):
     """Parse ``READ_XXX_BIT`` response bytes.
