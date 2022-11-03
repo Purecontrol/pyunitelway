@@ -250,7 +250,7 @@ class UnitelwayClient:
 
         buf = buf[dle_stx_idx:]
         buf.extend(b for b in self.socket.recv(256))
-        
+
         return buf
 
     def _unite_query_until_response(self,address, query, timeout=TIMEOUT_SEC, text="", debug=0):
@@ -281,6 +281,7 @@ class UnitelwayClient:
             #Used in local / must wait polling from automate
             else:
                 if self.is_my_turn_to_talk(address):
+                    print("me")
                     self._unite_query(query, text, debug)
                     r = self._wait_unite_response(timeout, debug)
         return r
@@ -310,6 +311,8 @@ class UnitelwayClient:
         if debug >= 1:
             print(f"[{time.time()}] Received:", format_hex_list(r))
         
+        self._unitelway_query([ACK],debug=debug)
+
         self.disconnect_socket(debug=debug)
         
         return unwrap_unite_response(r)
@@ -517,6 +520,7 @@ class UnitelwayClient:
         if not is_valid_response_code(READ_INTERNAL_WORD, resp[0]):
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_WORD), resp[0])
         
+
         return parse_read_word_result(resp[1:])
 
     def read_system_word(self, address, debug=0):

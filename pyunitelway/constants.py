@@ -7,7 +7,7 @@ TRET_MAX = ICT
 
 TERT_MIN = 150 # TEST
 
-TIMEOUT_SEC = 5 # Time between message sent and received in second
+TIMEOUT_SEC = 30 # Time between message sent and received in second
 
 # Special chars
 DLE = 0x10
@@ -16,7 +16,7 @@ ENQ = 0x05
 ACK = 0x06
 
 # Category types
-TYPE_TSX = 7
+TYPE_TSX = 0
 
 # Request codes
 MIRROR = 0xFA
