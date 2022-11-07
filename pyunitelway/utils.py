@@ -156,18 +156,20 @@ def compute_response_length(unitelway):
     :rtype: int
     """
     i = 3
+    
     length = unitelway[i]
     len_count = 0
 
     i += 1
     len_count += 1
     while len_count <= length:
-        if unitelway[i] == DLE:
+        if unitelway[i] == DLE & unitelway[i+1] == DLE:
             len_count -= 1
-
+   
         len_count += 1
         i += 1
 
+    
     return i + 1
 
 def duplicate_dle(unitelway, start_index):

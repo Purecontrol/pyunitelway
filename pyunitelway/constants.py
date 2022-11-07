@@ -16,7 +16,7 @@ ENQ = 0x05
 ACK = 0x06
 
 # Category types
-TYPE_TSX = 0
+TYPE_TSX = 7
 
 # Request codes
 MIRROR = 0xFA

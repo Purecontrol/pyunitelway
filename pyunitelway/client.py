@@ -311,7 +311,8 @@ class UnitelwayClient:
         if debug >= 1:
             print(f"[{time.time()}] Received:", format_hex_list(r))
         
-        self._unitelway_query([ACK],debug=debug)
+        if self.VPN_Mode==False:
+            self._unitelway_query([ACK],debug=debug)
 
         self.disconnect_socket(debug=debug)
         
@@ -1028,6 +1029,8 @@ class UnitelwayClient:
 
         ok = self._write_objects(segment, 0x07, start_address, len(data), data_bytes, debug)
         return ok
+
+    
 
     def write_internal_words(self, start_address, data, debug=0):
         """Write multiple words (2 bytes signed integers) in the internal memory (``%MW``).
