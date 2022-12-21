@@ -4,6 +4,7 @@
 from .constants import *
 from .errors import BadUnitelwayChecksum, RefusedUnitelwayMessage, UnexpectedObjectTypeResponse, UniteRequestFailed
 from .utils import check_unitelway, compute_bcc, compute_response_length, delete_dle, split_list_n
+import struct
 
 def keep_response_bytes(response):
     """Only keep UNI-TELWAY response bytes.
@@ -304,6 +305,28 @@ def parse_read_word_result(bytes):
     """
     return int.from_bytes(bytes, byteorder="little", signed=True)
 
+def parse_read_float_result(bytes):
+    """Parse ``READ_XXX_WORD`` and ``READ_XXX_DWORD`` response.
+
+    The response contains 2 or 4 bytes (``WORD`` or ``DWORD``). These bytes represent the signed word value (complement to 2) in little endian (less significant byte first).
+
+    This function convert this list of bytes into a signed int.
+
+    :param list[int] bytes: Received bytes without UNI-TE response code
+
+    :returns: Signed word value
+    :rtype: int
+    """
+    
+    
+    bin_str=""
+    for byte in reversed(bytes):
+        bin_str+='{0:08b}'.format(byte)
+
+    f = int(bin_str, 2)
+
+    return struct.unpack('f', struct.pack('I', f))[0]
+
 def parse_read_words_result(expected_obj_type, obj_size, bytes):
     """Parse multiple words and double words reading response.
 
@@ -325,6 +348,31 @@ def parse_read_words_result(expected_obj_type, obj_size, bytes):
 
     splitted = split_list_n(bytes, obj_size)
     values = [parse_read_word_result(v) for v in splitted]
+
+    return values
+
+
+def parse_read_floats_result(expected_obj_type, obj_size, bytes):
+    """Parse multiple words and double words reading response.
+
+    The response contains all the bytes of all words values. The values are signed (complement to 2) and in little endian (less significant byte first). 
+
+    :param int expected_obj_type: Object type sent in the ``READ_OBJECTS`` request
+    :param int obj_size: Size in bytes of the read word (2 for ``WORD``, 4 for ``DWORD``)
+    :param list[int] bytes: Received response without UNI-TE response code
+
+    :returns: Values of (d)words as signed int
+    :rtype: list[int]
+
+    :raises UnexpectedObjectTypeResponse: If the ``READ_OBJECTS`` object type is not the same as the sent request
+    """
+    if bytes[0] != expected_obj_type:
+        raise UnexpectedObjectTypeResponse(expected_obj_type, bytes[1])
+
+    bytes = bytes[1:]
+
+    splitted = split_list_n(bytes, obj_size)
+    values = [parse_read_float_result(v) for v in splitted]
 
     return values
 
