@@ -5,7 +5,7 @@ import socket
 import time
 
 from pyunitelway.constants import *
-from pyunitelway.conversion import parse_mirror_result, parse_read_bit_result, parse_read_bits_result, parse_read_io_channel_result, parse_read_word_result, parse_read_words_result, parse_write_io_channel_result, parse_write_result, unwrap_unite_response
+from pyunitelway.conversion import parse_mirror_result, parse_read_bit_result, parse_read_bits_result, parse_read_io_channel_result, parse_read_word_result,parse_read_float_result, parse_read_words_result, parse_read_floats_result, parse_write_io_channel_result, parse_write_result, unwrap_unite_response
 from pyunitelway.errors import BadReadBitsNumberParam, UnexpectedUniteResponse
 from pyunitelway.utils import compute_bcc, duplicate_dle, format_bytearray, format_hex_list, get_response_code, is_valid_response_code, sublist_in_list
 
@@ -527,6 +527,7 @@ class UnitelwayClient:
 
         return parse_read_word_result(resp[1:])
 
+
     def read_system_word(self, address, debug=0):
         """Read a word (2 bytes signed integer) in the system memory (``%SW``).
 
@@ -586,6 +587,26 @@ class UnitelwayClient:
             raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_DWORD), resp[0])
 
         return parse_read_word_result(resp[1:])
+
+    def read_internal_float(self, address, debug=0):
+        """Read a double word (4 bytes signed integer) in the internal memory (``%MW``).
+
+        :param int address: Word address
+        :param bool debug: :doc:`Debug mode </debug_levels>`
+
+        :returns: Signed word value
+        :rtype: int
+        """
+        unite_query = self._build_addressing_query(READ_INTERNAL_DWORD, address)
+
+        slave_address= self._unitelway_start[2]
+
+        resp = self.run_unite(slave_address, unite_query, text=f"READ_INTERNAL_FLOAT at %MD{address}", debug=debug)
+
+        if not is_valid_response_code(READ_INTERNAL_DWORD, resp[0]):
+            raise UnexpectedUniteResponse(get_response_code(READ_INTERNAL_DWORD), resp[0])
+
+        return parse_read_float_result(resp[1:])
 
     def read_constant_dword(self, address, debug=0):
         """Read a double word (4 bytes signed integer) in the constant memory (``%KW``).
@@ -765,6 +786,24 @@ class UnitelwayClient:
         r = self._read_objects(0x68, 0x08, start_address, number, debug)
         #print("client.py - top read func: " + '[{}]'.format(','.join(f'{i:02X}'for i in r)) , flush=True)
         return parse_read_words_result(0x08, 4, r[1:])
+
+    def read_internal_floats(self, start_address, number, debug=0):
+        """Read multiple internal double words (4 bytes signed integers) (``%MD``).
+
+        .. WARNING::
+
+            | Reading multiple ``DWORD``'s reads with a step of 2 addresses.
+            | If I read 2 ``DWORD``'s starting at ``%MD1``, it will return ``[%MD1, %MD3]``.
+
+        :param int start_address: First address to read
+        :param int number: Number of words to read
+        :param bool debug: :doc:`Debug mode </debug_levels>`
+
+        :returns: List of signed words values
+        :rtype: list[int]
+        """
+        r = self._read_objects(0x68, 0x08, start_address, number, debug)
+        return parse_read_floats_result(0x08, 4, r[1:])
 
     def read_constant_dwords(self, start_address, number, debug=0):
         """Read multiple constant double words (4 bytes signed integers) (``%KD``).
