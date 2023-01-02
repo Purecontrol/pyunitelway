@@ -63,7 +63,9 @@ class UnitelwayClient:
         :param list[int] connection_query: *Connection query* bytes
         """
         self.socket = socket.socket(socket.AF_INET)
+        self.socket.settimeout(2)
         self.socket.connect((ip, port))
+        self.socket.settimeout(None)
 
         if connection_query is not None:
             self._send_connection_query(connection_query)
@@ -218,6 +220,8 @@ class UnitelwayClient:
         buf = []
         while True:
             r = self.socket.recv(3)
+            if((not r) or (not buf and len(r) == 1 and r[0] == 0x15)):
+                raise Exception("Nack received ! Force quitting... (" + str(r) + ")")
             if debug >= 2:
                 print("recv =>", format_hex_list(r))
             buf.extend(b for b in r)
@@ -250,7 +254,7 @@ class UnitelwayClient:
 
         buf = buf[dle_stx_idx:]
         buf.extend(b for b in self.socket.recv(256))
-
+        #print("client.py - _wait_unite_response func: " + '[{}]'.format(','.join(f'{i:02X}'for i in buf)), flush=True)
         return buf
 
     def _unite_query_until_response(self,address, query, timeout=TIMEOUT_SEC, text="", debug=0):
@@ -314,8 +318,7 @@ class UnitelwayClient:
         if self.VPN_Mode==False:
             self._unitelway_query([ACK],debug=debug)
 
-        self.disconnect_socket(debug=debug)
-        
+        #self.disconnect_socket(debug=debug)
         return unwrap_unite_response(r)
     
     def is_my_turn_to_talk(self,address,debug=0):
@@ -667,6 +670,7 @@ class UnitelwayClient:
             raise BadReadBitsNumberParam(number)
 
         r = self._read_objects(0x64, 0x05, start_address, number, debug)
+        #print("client.py - top read func: " + '[{}]'.format(','.join(f'{i:02X}'for i in r)) , flush=True)
         return parse_read_bits_result(0x05, start_address, number, r[1:], has_forcing=True)
 
     def read_system_bits(self, start_address, number, debug=0):
@@ -714,6 +718,7 @@ class UnitelwayClient:
         :rtype: list[int]
         """
         r = self._read_objects(0x68, 0x07, start_address, number, debug)
+        #print("client.py - top read func: " + '[{}]'.format(','.join(f'{i:02X}'for i in r)) , flush=True)
         return parse_read_words_result(0x07, 2, r[1:])
 
     def read_system_words(self, start_address, number, debug=0):
@@ -758,6 +763,7 @@ class UnitelwayClient:
         :rtype: list[int]
         """
         r = self._read_objects(0x68, 0x08, start_address, number, debug)
+        #print("client.py - top read func: " + '[{}]'.format(','.join(f'{i:02X}'for i in r)) , flush=True)
         return parse_read_words_result(0x08, 4, r[1:])
 
     def read_constant_dwords(self, start_address, number, debug=0):

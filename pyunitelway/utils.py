@@ -129,15 +129,17 @@ def split_list_n(list, n):
     """
     splitted = []
     word = []
-    for i, b in enumerate(list):
-        if i % n == 0:
-            if len(word) > 0:
+    try:
+        for i, b in enumerate(list):
+            if i % n == 0:
+                if len(word) > 0:
+                    splitted.append(word)
+                word = []
+            word.append(b)
+            if i == len(list) - 1:
                 splitted.append(word)
-            word = []
-
-        word.append(b)
-        if i == len(list) - 1:
-            splitted.append(word)
+    except Exception:
+        raise(Exception("split_list_n function error !"))
 
     return splitted
 
@@ -165,11 +167,9 @@ def compute_response_length(unitelway):
     while len_count <= length:
         if unitelway[i] == DLE & unitelway[i+1] == DLE:
             len_count -= 1
-   
         len_count += 1
         i += 1
-
-    
+        
     return i + 1
 
 def duplicate_dle(unitelway, start_index):
@@ -207,9 +207,10 @@ def delete_dle(unitelway):
     :rtype: list[int]    
     """
     result = unitelway[:3]
-
+    bytes_length= len(unitelway)
+    
     i = 3
-    while i < len(unitelway):
+    while i < bytes_length-1:
         b = unitelway[i]
         if b != DLE:
             result.append(b)
@@ -219,10 +220,12 @@ def delete_dle(unitelway):
                 result.append(unitelway[i + 1])
             except:
                 pass
-
+                    
             i += 1 # skip duplicated DLE
 
         i += 1
+
+    result.append(unitelway[bytes_length-1])
 
     return result
 

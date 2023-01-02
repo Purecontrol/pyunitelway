@@ -16,8 +16,7 @@ def keep_response_bytes(response):
     :returns: UNI-TELWAY bytes
     :rtype: list[int]
     """
-    length = compute_response_length(response)
-    return response[:length]
+    return response[:4] + [value for index, value in enumerate(response[4:]) if not value == response[4+index-1] == DLE]
 
 def unwrap_unitelway_response(response):
     """Delete the duplicated ``<DLE>``'s in a UNI-TELWAY response.
@@ -88,11 +87,18 @@ def unwrap_unite_response(response):
     :raises BadUnitelwayChecksum, UniteRequestFailed: Bad checksum, or received ``0xFD`` (which means UNI-TE request fail)
     :raises UniteRequestFailed: Received ``0xFD`` (which means UNI-TE request fail)
     """
-    response = keep_response_bytes(response)
     if not check_unitelway(response):
+        #print("Unitelway check failed!", flush=True)
         raise BadUnitelwayChecksum(response[-1], compute_bcc(response[:-1]))
+    #print("Unitelway check succeeded!", flush=True)
+    
+    #print('[{}]'.format(','.join(f'{i:02X}'for i in response)), flush=True)
+    response = keep_response_bytes(response)
+    #print('[{}]'.format(','.join(f'{i:02X}'for i in response)), flush=True)
 
-    unitelway_bytes = unwrap_unitelway_response(response)
+    # unitelway_bytes = unwrap_unitelway_response(response)
+    unitelway_bytes = response
+
     xway_bytes = unitelway_to_xway(unitelway_bytes)
 
     unite_bytes = xway_to_unite(xway_bytes)

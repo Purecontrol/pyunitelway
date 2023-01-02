@@ -7,7 +7,7 @@ TRET_MAX = ICT
 
 TERT_MIN = 150 # TEST
 
-TIMEOUT_SEC = 30 # Time between message sent and received in second
+TIMEOUT_SEC = 2 # Time between message sent and received in second
 
 # Special chars
 DLE = 0x10
